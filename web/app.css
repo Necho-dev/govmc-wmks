@@ -1,0 +1,104 @@
+:root {
+  color-scheme: dark;
+  --bg: #111418;
+  --panel: #1b1f24;
+  --line: #2c333d;
+  --text: #e8eaed;
+  --muted: #9aa3ad;
+  --accent: #5b9fd4;
+  --on: #3d9a5a;
+  --off: #8a9098;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  display: flex;
+  font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+aside {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  overflow: auto;
+}
+h1 { font-size: 16px; margin: 0 0 8px; }
+.hint { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+button {
+  background: #2a313a;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.45; cursor: default; }
+#refresh { width: 100%; margin-bottom: 12px; }
+#vms { list-style: none; margin: 0; padding: 0; }
+#vms li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#vms li:hover, #vms li.active { background: #262d36; }
+.power { font-size: 11px; color: var(--off); }
+.power.on { color: var(--on); }
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+#status { flex: 1; color: var(--muted); min-width: 0; }
+#hud {
+  flex-shrink: 0;
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #8fd0a4;
+  background: #122018;
+  border: 1px solid #1e3a2a;
+  border-radius: 4px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+#wmksContainer,
+#wmksContainer.ui-widget,
+#wmksContainer.ui-widget-content {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  position: relative;
+  overflow: hidden;
+  background: #000 !important;
+  border: 0 !important;
+  outline: none;
+}
+/* SDK 用 scale() 时默认原点是中心，再配 left=(parent-guestW)/2 会把画面甩出容器（叠到侧栏），键鼠坐标也全偏 */
+#wmksContainer canvas,
+#wmksContainer video {
+  position: absolute;
+  transform-origin: 0 0 !important;
+  /* 未点击接管前必须能看见本机光标，避免 canvas 把指针吃掉 */
+  cursor: default !important;
+}
+#wmksContainer.controlling canvas,
+#wmksContainer.controlling video {
+  cursor: none !important;
+}

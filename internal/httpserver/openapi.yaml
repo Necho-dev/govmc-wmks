@@ -1,0 +1,263 @@
+openapi: 3.0.3
+info:
+  title: Independent ESXi REST (govmomi)
+  version: "1.0.0"
+  description: |
+    Product surface is REST + MCP. govc is troubleshooting only.
+    Standalone ESXi has no vm.clone. External VM id is Host Client /ui/#/host/vms/{id}.
+    Metrics: GET /v1/metrics (index) → /v1/metrics/counters (names) →
+    /v1/host/metrics or /v1/vms/{id}/metrics (series). GET /v1/host is inventory, not series.
+    Networks: GET /v1/networks is host portgroups; VM vNICs are /v1/vms/{id}/networks.
+    Console tickets return local /ws/console only; ESXi WSS is never exposed.
+servers:
+  - url: /
+paths:
+  /v1/about:
+    get:
+      summary: ESXi About
+      responses:
+        "200": { description: OK }
+  /v1/vms:
+    get:
+      summary: List VMs (ops projection; view=full for vmInfo)
+      parameters:
+        - in: query
+          name: view
+          schema: { type: string, enum: [ops, full] }
+      responses:
+        "200": { description: OK }
+  /v1/vms/{id}:
+    get:
+      summary: VM by Host Client moref (/ui/#/host/vms/{id}), name, or unique UUID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+        "409": { description: Ambiguous uuid }
+    patch:
+      summary: Reconfigure CPU/memory/nestedHV/IOMMU
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirm: { type: boolean }
+                numCPU: { type: integer }
+                memoryMB: { type: integer }
+                nestedHV: { type: boolean }
+                iommu: { type: boolean }
+      responses:
+        "200": { description: OK }
+  /v1/vms/{id}/devices:
+    get:
+      summary: VM disks, networks (vNICs), vGPU
+      responses:
+        "200": { description: OK }
+  /v1/vms/{id}/networks:
+    get:
+      summary: VM virtual NICs (not host portgroups)
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Add or replace a VM network adapter onto a portgroup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirm: { type: boolean }
+                portgroup: { type: string }
+                adapter: { type: string }
+                replace: { type: boolean }
+      responses:
+        "200": { description: OK }
+  /v1/vms/{id}/screenshot:
+    get:
+      summary: PNG screenshot (409 if powered off)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: PNG
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+  /v1/vms/{id}/metrics:
+    get:
+      summary: VM QueryPerf series (not the counter catalog)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: names
+          schema: { type: string }
+        - in: query
+          name: instance
+          schema: { type: string, description: Default empty = VM aggregate }
+        - in: query
+          name: start
+          schema: { type: string, format: date-time }
+        - in: query
+          name: end
+          schema: { type: string, format: date-time }
+        - in: query
+          name: maxSample
+          schema: { type: integer }
+      responses:
+        "200": { description: OK }
+  /v1/vms/{id}/console:
+    post:
+      summary: One-shot local WebMKS ticket (2 minutes)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: { ws, note } }
+  /v1/vms/{id}/power:
+    post:
+      summary: Power action; confirm required
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action: { type: string, enum: [on, off, reset, suspend] }
+                confirm: { type: boolean }
+      responses:
+        "200": { description: OK }
+  /v1/vms/{id}/question:
+    get:
+      summary: Pending question
+      responses:
+        "200": { description: OK }
+    post:
+      summary: Answer question; confirm required
+      responses:
+        "200": { description: OK }
+  /v1/vms/{id}/unregister:
+    post:
+      summary: Unregister (files kept; MoRef changes)
+      responses:
+        "200": { description: OK }
+  /v1/vms/register:
+    post:
+      summary: Register a .vmx
+      responses:
+        "200": { description: OK }
+  /v1/host:
+    get:
+      summary: Host inventory (cpuMhz, memory, portgroups summary). Not time series.
+      responses:
+        "200": { description: OK }
+  /v1/host/metrics:
+    get:
+      summary: Host QueryPerf series. Same query params as /v1/vms/{id}/metrics.
+      responses:
+        "200": { description: OK }
+  /v1/networks:
+    get:
+      summary: Host portgroups. VM vNICs are /v1/vms/{id}/networks.
+      responses:
+        "200": { description: OK }
+  /v1/datastores:
+    get:
+      summary: Datastore inventory only (summary may be stale)
+      responses:
+        "200": { description: OK }
+  /v1/datastores/refresh:
+    post:
+      summary: Refresh host storage + datastore freeSpace/capacity then return inventory
+      responses:
+        "200": { description: OK }
+  /v1/datastores/folder:
+    get:
+      summary: List subfolders
+    post:
+      summary: Create folder
+    delete:
+      summary: Delete folder (confirm)
+  /v1/datastores/folder/copy:
+    post:
+      summary: Copy folder; default dryRun
+  /v1/datastores/folder/move:
+    post:
+      summary: Move folder
+  /v1/datastores/folder/rename:
+    post:
+      summary: Rename folder (move)
+  /v1/datastores/file:
+    get:
+      summary: List files in a folder
+    put:
+      summary: Upload/overwrite file
+    delete:
+      summary: Delete file
+  /v1/datastores/file/content:
+    get:
+      summary: Download file
+  /v1/datastores/file/copy:
+    post:
+      summary: Copy file
+  /v1/datastores/file/move:
+    post:
+      summary: Move file
+  /v1/datastores/file/rename:
+    post:
+      summary: Rename file
+  /v1/metrics:
+    get:
+      summary: Metrics API index (hierarchy only, no samples)
+      responses:
+        "200": { description: OK }
+  /v1/metrics/counters:
+    get:
+      summary: Counter name catalog. Use names= on a series endpoint next.
+      parameters:
+        - in: query
+          name: entity
+          schema: { type: string, enum: [vm, host] }
+      responses:
+        "200": { description: OK }
+  /v1/custom/clone:
+    post:
+      summary: Custom directory clone; dryRun default; async returns taskId
+      responses:
+        "200": { description: dry-run plan or sync result }
+        "202": { description: { taskId, poll } }
+  /v1/custom/clone/tasks:
+    get:
+      summary: List in-memory clone tasks
+  /v1/custom/clone/tasks/{taskId}:
+    get:
+      summary: Clone task progress
+  /v1/custom/clone/tasks/{taskId}/cancel:
+    post:
+      summary: Cancel between steps
+  /mcp:
+    post:
+      summary: MCP JSON-RPC (same handlers as REST)
+      responses:
+        "200": { description: JSON-RPC }
+  /v1/openapi.yaml:
+    get:
+      summary: This document
+      responses:
+        "200": { description: YAML }

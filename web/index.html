@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>govmc</title>
+  <link rel="stylesheet" href="/vendor/jquery-ui.min.css" />
+  <link rel="stylesheet" href="/wmks/css/wmks-all.css" />
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <aside>
+    <h1>govmc</h1>
+    <p class="hint">点列表即连接并应立刻出画面；再点击画面接管。Esc 或「释放控制」退出聚焦。</p>
+    <button type="button" id="refresh">刷新列表</button>
+    <ul id="vms"></ul>
+  </aside>
+  <main>
+    <header>
+      <span id="status">未连接</span>
+      <span id="hud">—</span>
+      <button type="button" id="cad" disabled>发送 Ctrl+Alt+Del</button>
+      <button type="button" id="ungrab" disabled>释放控制</button>
+      <button type="button" id="disconnect" disabled>断开</button>
+    </header>
+    <div id="wmksContainer" tabindex="0"></div>
+  </main>
+  <script src="/vendor/jquery-3.6.0.min.js"></script>
+  <script src="/vendor/jquery-ui.min.js"></script>
+  <script src="/wmks/wmks.min.js"></script>
+  <script src="/app.js?v=20260909-vmlabel"></script>
+</body>
+</html>
